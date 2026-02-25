@@ -2,6 +2,10 @@ package assign2.server.v2.model;
 
 import com.google.gson.Gson;
 
+/**
+ * Message format published to RabbitMQ.
+ * Superset of ChatMessageDto — adds roomId, serverId, clientIp for routing and tracing.
+ */
 public class QueueMessage {
 
   private static final Gson GSON = new Gson();
@@ -16,34 +20,29 @@ public class QueueMessage {
   private final String serverId;
   private final String clientIp;
 
-  private QueueMessage(String messageId, String roomId, String userId, String username, String message,
-      String timestamp, String messageType, String serverId, String clientIp) {
-    this.messageId = messageId;
-    this.roomId = roomId;
-    this.userId = userId;
-    this.username = username;
-    this.message = message;
-    this.timestamp = timestamp;
-    this.messageType = messageType;
-    this.serverId = serverId;
-    this.clientIp = clientIp;
-  }
-
-  public static QueueMessage from(ChatMessageDto dto, String roomId, String serverId, String clientIp) {
-    return new QueueMessage(
-        dto.getMessageId(),
-        roomId,
-        dto.getUserId(),
-        dto.getUsername(),
-        dto.getMessage(),
-        dto.getTimestamp(),
-        dto.getMessageType(),
-        serverId,
-        clientIp
-    );
+  public QueueMessage(ChatMessageDto dto, String roomId, String serverId, String clientIp) {
+    this.messageId   = dto.getMessageId();
+    this.roomId      = roomId;
+    this.userId      = dto.getUserId();
+    this.username    = dto.getUsername();
+    this.message     = dto.getMessage();
+    this.timestamp   = dto.getTimestamp();
+    this.messageType = dto.getMessageType();
+    this.serverId    = serverId;
+    this.clientIp    = clientIp;
   }
 
   public String toJson() {
     return GSON.toJson(this);
   }
+
+  public String getMessageId() { return messageId; }
+  public String getRoomId()    { return roomId; }
+  public String getUserId()    { return userId; }
+  public String getUsername()  { return username; }
+  public String getMessage()   { return message; }
+  public String getTimestamp() { return timestamp; }
+  public String getMessageType() { return messageType; }
+  public String getServerId()  { return serverId; }
+  public String getClientIp()  { return clientIp; }
 }

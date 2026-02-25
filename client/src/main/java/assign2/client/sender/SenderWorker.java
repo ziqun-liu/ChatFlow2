@@ -35,7 +35,7 @@ public class SenderWorker implements Runnable {
         if (msg == null || msg == ChatMessage.POISON) {
           break;
         }
-        metrics.recordSendAttempt();
+        this.metrics.recordSendAttempt();
         sendWithRetry(msg);
       }
     } catch (Exception e) {
@@ -49,10 +49,10 @@ public class SenderWorker implements Runnable {
       try {
         ClientEndpoint client = connMgr.conn(roomId);
         long startMs = System.currentTimeMillis();
-        String ack = client.sendAndAwaitAck(msg.toJson(), 5000);
+        String ack = client.sendAndAwaitAck(msg.toJson(), msg.getMessageId(), 5000);
         if (ack != null) {
           long latencyMs = System.currentTimeMillis() - startMs;
-          int statusCode = "OK".equals(parseStatus(ack)) ? 200 : 400;
+          int statusCode = isAckSuccess(ack) ? 200 : 400;
           metrics.recordMessageMetrics(startMs, msg.getMessageType(), latencyMs, statusCode, roomId);
           if (attempt > 0) {
             metrics.recordRetrySuccess();
@@ -77,12 +77,14 @@ public class SenderWorker implements Runnable {
     metrics.recordFailure();
   }
 
-  private String parseStatus(String responseJson) {
+  // Returns true if the ACK indicates the server successfully published the message.
+  // type=ACK means publish succeeded; type=ERROR means validation or publish failed.
+  private boolean isAckSuccess(String responseJson) {
     try {
       JsonObject obj = JsonParser.parseString(responseJson).getAsJsonObject();
-      return obj.get("status").getAsString();
+      return "ACK".equals(obj.get("type").getAsString());
     } catch (Exception e) {
-      return "UNKNOWN";
+      return false;
     }
   }
 }

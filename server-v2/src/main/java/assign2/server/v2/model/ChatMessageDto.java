@@ -6,6 +6,7 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 public class ChatMessageDto {
 
@@ -28,6 +29,16 @@ public class ChatMessageDto {
 
   public List<String> validate() {
     List<String> errors = new ArrayList<>();
+
+    if (messageId == null || messageId.isBlank()) {
+      errors.add("messageId is required");
+    } else {
+      try {
+        UUID.fromString(messageId);
+      } catch (IllegalArgumentException e) {
+        errors.add("messageId must be a valid UUID");
+      }
+    }
 
     if (userId == null || userId.isBlank()) {
       errors.add("userId is required");
