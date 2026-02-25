@@ -7,3 +7,6 @@ dependency-reduced-pom.xml
 *.class
 *.log
 config.properties
+assignment2.md
+.cursor/
+
