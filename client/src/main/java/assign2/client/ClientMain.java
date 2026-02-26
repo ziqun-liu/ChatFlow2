@@ -15,7 +15,8 @@ import java.util.concurrent.TimeUnit;
 
 public class ClientMain {
 
-  private static final String WS_URI = "ws://54.148.180.35:8080/server/chat/";
+  // 54.148.180.35
+  private static final String WS_URI = "ws://localhost:8080/server/chat/";
   private static final int TOTAL_MESSAGES = 500_000;
 
   private static final int WARMUP_THREADS = 32;
@@ -57,7 +58,7 @@ public class ClientMain {
             connMgr.acquire(roomId);
             try {
               ClientEndpoint endpoint = connMgr.conn(roomId);
-              String ack = endpoint.sendAndAwaitAck(msg.toJson(), 5000);
+              String ack = endpoint.sendAndAwaitAck(msg.toJson(), msg.getMessageId(), 5000);
               if (ack != null) {
                 warmupMetrics.recordSuccess();
               } else {
