@@ -97,71 +97,71 @@ chmod +x deployment/deploy-all.sh
 # Architecture
 
 ```text
-┌─────────────────────────────────────────────────────────────────────┐
-│                          Load Test Client                           │
-│                                                                     │
-│  MessageGenerator → LinkedBlockingQueue → SenderWorker × N          │
-│                                               │                     │
-│                                          WebSocket                  │
-└───────────────────────────────────────────────│─────────────────────┘
-                                                │
-                                                ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                     AWS Application Load Balancer                   │
-└──────────┬──────────────────┬──────────────────┬────────────────────┘
-           │                  │                  │
-           ▼                  ▼                  ▼
-    ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
-    │  server-v2   │   │  server-v2   │   │  server-v2   │
-    │  (EC2-A1)    │   │  (EC2-A2)    │   │  (EC2-A3)    │
-    │              │   │              │   │              │
-    │ ServerEndpt  │   │ ServerEndpt  │   │ ServerEndpt  │
-    │ ChannelPool  │   │ ChannelPool  │   │ ChannelPool  │
-    │ MsgPublisher │   │ MsgPublisher │   │ MsgPublisher │
-    │ BroadcastSvl │   │ BroadcastSvl │   │ BroadcastSvl │
-    └──────┬───────┘   └──────┬───────┘   └──────┬───────┘
-           │                  │                  │
-           └──────────────────┴──────────────────┘
-                              │ publish
-                              │ routing key: room.{roomId}
-                              ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                       RabbitMQ (EC2-B)                              │
-│                                                                     │
-│   Exchange: chat.exchange (topic)                                   │
-│                                                                     │
-│   room.1  room.2  room.3  ...  room.20                              │
-│   [████]  [████]  [████]  ...  [████]                               │
-└──────────────────────────────┬──────────────────────────────────────┘
-                               │ consume
-                               ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                        consumer (EC2-C)                             │
-│                                                                     │
-│   ConsumerMain                                                      │
-│       └── ConsumerPool                                              │
-│               ├── RoomConsumer thread (room.1  ~ room.5 )           │
-│               ├── RoomConsumer thread (room.6  ~ room.10)           │
-│               ├── RoomConsumer thread (room.11 ~ room.15)           │
-│               └── RoomConsumer thread (room.16 ~ room.20)           │
-│                         │                                           │
-│                         ▼                                           │
-│               ServerNotifier                                        │
-│               HTTP POST /broadcast to all server-v2 instances       │
-└──────────────────────────────┬──────────────────────────────────────┘
-                               │ HTTP POST /broadcast
-                               ▼
-    ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
-    │  server-v2   │   │  server-v2   │   │  server-v2   │
-    │  (EC2-A1)    │   │  (EC2-A2)    │   │  (EC2-A3)    │
-    │              │   │              │   │              │
-    │ BroadcastSvl │   │ BroadcastSvl │   │ BroadcastSvl │
-    │ rooms map    │   │ rooms map    │   │ rooms map    │
-    └──────┬───────┘   └──────┬───────┘   └──────┬───────┘
-           │                  │                  │
-           └──────────────────┴──────────────────┘
-                              │ WebSocket broadcast
-                              │ (only to sessions held by each instance)
-                              ▼
-                    WebSocket Clients (chat users)
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           Load Test Client                              │
+│                                                                         │
+│   MessageGenerator → LinkedBlockingQueue → SenderWorker × N            │
+│                                                │                        │
+│                                           WebSocket                     │
+└────────────────────────────────────────────────│────────────────────────┘
+                                                 │
+                                                 ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      AWS Application Load Balancer                      │
+└────────┬─────────────────┬─────────────────┬─────────────────┬──────────┘
+         │                 │                 │                 │
+         ▼                 ▼                 ▼                 ▼
+  ┌─────────────┐   ┌─────────────┐   ┌─────────────┐   ┌─────────────┐
+  │  server-v2  │   │  server-v2  │   │  server-v2  │   │  server-v2  │
+  │  (EC2-A1)   │   │  (EC2-A2)   │   │  (EC2-A3)   │   │  (EC2-A4)   │
+  │             │   │             │   │             │   │             │
+  │ ServerEndpt │   │ ServerEndpt │   │ ServerEndpt │   │ ServerEndpt │
+  │ ChannelPool │   │ ChannelPool │   │ ChannelPool │   │ ChannelPool │
+  │ MsgPublshr  │   │ MsgPublshr  │   │ MsgPublshr  │   │ MsgPublshr  │
+  │ BroadcastSv │   │ BroadcastSv │   │ BroadcastSv │   │ BroadcastSv │
+  └──────┬──────┘   └──────┬──────┘   └──────┬──────┘   └──────┬──────┘
+         │                 │                 │                 │
+         └─────────────────┴─────────────────┴─────────────────┘
+                                     │ publish
+                                     │ routing key: room.{roomId}
+                                     ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          RabbitMQ (EC2-B)                               │
+│                                                                         │
+│   Exchange: chat.exchange (topic)                                       │
+│                                                                         │
+│   room.1  room.2  room.3  ...  room.20                                  │
+│   [████]  [████]  [████]  ...  [████]                                   │
+└─────────────────────────────────┬───────────────────────────────────────┘
+                                  │ consume
+                                  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          consumer (EC2-C)                               │
+│                                                                         │
+│   ConsumerMain                                                          │
+│       └── ConsumerPool                                                  │
+│               ├── RoomConsumer thread (room.1  ~ room.5 )               │
+│               ├── RoomConsumer thread (room.6  ~ room.10)               │
+│               ├── RoomConsumer thread (room.11 ~ room.15)               │
+│               └── RoomConsumer thread (room.16 ~ room.20)               │
+│                         │                                               │
+│                         ▼                                               │
+│               ServerNotifier                                            │
+│               HTTP POST /broadcast to all server-v2 instances           │
+└─────────────────────────────────┬───────────────────────────────────────┘
+                                  │ HTTP POST /broadcast
+                                  ▼
+  ┌─────────────┐   ┌─────────────┐   ┌─────────────┐   ┌─────────────┐
+  │  server-v2  │   │  server-v2  │   │  server-v2  │   │  server-v2  │
+  │  (EC2-A1)   │   │  (EC2-A2)   │   │  (EC2-A3)   │   │  (EC2-A4)   │
+  │             │   │             │   │             │   │             │
+  │ BroadcastSv │   │ BroadcastSv │   │ BroadcastSv │   │ BroadcastSv │
+  │ rooms map   │   │ rooms map   │   │ rooms map   │   │ rooms map   │
+  └──────┬──────┘   └──────┬──────┘   └──────┬──────┘   └──────┬──────┘
+         │                 │                 │                 │
+         └─────────────────┴─────────────────┴─────────────────┘
+                                     │ WebSocket broadcast
+                                     │ (only to sessions held by each instance)
+                                     ▼
+                          WebSocket Clients (chat users)
 ```
