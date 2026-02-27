@@ -88,11 +88,17 @@ public class RoomConsumer implements Runnable {
             boolean success = notifier.notifyAll(msg);
             if (success) {
               channel.basicAck(deliveryTag, false);
+            } else if (envelope.isRedeliver()) {
+              // Already retried once — discard to avoid infinite requeue loop.
+              // In production, configure a dead letter exchange to capture these.
+              logger.warning("Discarding redelivered messageId=" + msg.getMessageId()
+                  + " after failed retry.");
+              channel.basicNack(deliveryTag, false, false); // requeue=false
             } else {
-              // requeue=true: RabbitMQ will re-deliver to this or another consumer
-              channel.basicNack(deliveryTag, false, true);
+              // First failure — allow one requeue retry
+              channel.basicNack(deliveryTag, false, true);  // requeue=true
               logger.warning("Nacked messageId=" + msg.getMessageId()
-                  + ", will be requeued.");
+                  + ", will be requeued once.");
             }
           }
         });

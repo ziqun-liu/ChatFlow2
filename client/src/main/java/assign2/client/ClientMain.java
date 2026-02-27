@@ -15,8 +15,15 @@ import java.util.concurrent.TimeUnit;
 
 public class ClientMain {
 
-  // 54.148.180.35
-  private static final String WS_URI = "ws://localhost:8080/server/chat/";
+  // Priority: WS_URI env var > default localhost
+  // Production: export WS_URI="ws://ALB_DNS/server/chat/"
+  private static final String WS_URI = resolveWsUri();
+
+  private static String resolveWsUri() {
+    String envVal = System.getenv("WS_URI");
+    if (envVal != null && !envVal.isEmpty()) return envVal;
+    return "ws://localhost:8080/server/chat/";
+  }
   private static final int TOTAL_MESSAGES = 500_000;
 
   private static final int WARMUP_THREADS = 32;

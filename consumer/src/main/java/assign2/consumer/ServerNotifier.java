@@ -45,7 +45,7 @@ public class ServerNotifier {
     String body = msg.toJson();
     boolean allSuccess = true;
 
-    for (String baseUrl : serverUrls) {
+    for (String baseUrl : this.serverUrls) {
       String url = baseUrl + "/broadcast";
       try {
         HttpRequest request = HttpRequest.newBuilder()

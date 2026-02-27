@@ -1,0 +1,16 @@
+# RabbitMQ connection config (local development)
+# DO NOT commit this file with real credentials - add to .gitignore
+rabbitmq.host=localhost
+rabbitmq.port=5672
+rabbitmq.user=guest
+rabbitmq.pass=guest
+rabbitmq.exchange=chat.exchange
+
+# Comma-separated list of server-v2 base URLs (no trailing slash)
+# Local: single server. Production: all ALB target instances.
+server.urls=http://localhost:8080/server
+
+# Number of RoomConsumer threads.
+# Each thread handles (ROOM_COUNT / consumer.threads) rooms.
+# 20 rooms / 4 threads = 5 rooms per thread.
+consumer.threads=4
