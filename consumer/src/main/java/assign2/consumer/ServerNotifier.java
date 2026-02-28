@@ -55,7 +55,7 @@ public class ServerNotifier {
             .POST(BodyPublishers.ofString(body))
             .build();
 
-        HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
+        HttpResponse<String> response = this.httpClient.send(request, BodyHandlers.ofString());
 
         if (response.statusCode() == 200) {
           logger.fine("Broadcast OK: url=" + url + ", messageId=" + msg.getMessageId());

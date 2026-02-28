@@ -13,16 +13,14 @@ import java.util.List;
 import java.util.logging.Logger;
 
 /**
- * A Runnable that consumes messages from a set of RabbitMQ queues (one per room)
- * and notifies all server-v2 instances via HTTP POST /broadcast.
- *
- * Delivery guarantee:
- *   - basicAck only after ServerNotifier.notifyAll() returns true (all servers 200)
- *   - basicNack (requeue=true) if any server fails — message re-delivered by RabbitMQ
- *
- * One RoomConsumer thread handles multiple rooms (queues), consuming from each
- * in a push-based model (basicConsume). The thread blocks on the RabbitMQ
- * connection until shutdown is requested.
+ * A Runnable that consumes messages from a set of RabbitMQ queues (one per room) and notifies all
+ * server-v2 instances via HTTP POST /broadcast.
+ * <p>
+ * Delivery guarantee: - basicAck only after ServerNotifier.notifyAll() returns true (all servers
+ * 200) - basicNack (requeue=true) if any server fails — message re-delivered by RabbitMQ
+ * <p>
+ * One RoomConsumer thread handles multiple rooms (queues), consuming from each in a push-based
+ * model (basicConsume). The thread blocks on the RabbitMQ connection until shutdown is requested.
  */
 public class RoomConsumer implements Runnable {
 
@@ -47,20 +45,20 @@ public class RoomConsumer implements Runnable {
     factory.setPassword(RabbitMQConfig.PASSWORD);
     factory.setAutomaticRecoveryEnabled(true);  // auto-reconnect on network failure
 
-    try (Connection connection = factory.newConnection("consumer-" + roomIds);
-         Channel channel = connection.createChannel()) {
+    try (Connection connection = factory.newConnection(
+        "consumer-" + roomIds); Channel channel = connection.createChannel()) {
 
       // Limit unacknowledged messages in-flight per consumer thread
       channel.basicQos(PREFETCH_COUNT);
 
       // Declare queues and bind to exchange for each assigned room
-      for (String roomId : roomIds) {
+      for (String roomId : this.roomIds) {
         String queueName = RabbitMQConfig.queueName(roomId);
         String routingKey = RabbitMQConfig.routingKey(roomId);
 
-        // durable=true, exclusive=false, autoDelete=false
-        channel.queueDeclare(queueName, true, false, false, null);
-        channel.queueBind(queueName, RabbitMQConfig.EXCHANGE, routingKey);
+        // Queues and bindings are pre-configured by rabbitmq-setup.sh.
+        // Use passive declare to verify existence without modifying parameters.
+        channel.queueDeclarePassive(queueName);
 
         // Register push-based consumer — autoAck=false for manual ack
         channel.basicConsume(queueName, false, new DefaultConsumer(channel) {
@@ -81,8 +79,7 @@ public class RoomConsumer implements Runnable {
               return;
             }
 
-            logger.fine("Consumed: messageId=" + msg.getMessageId()
-                + ", room=" + msg.getRoomId());
+            logger.fine("Consumed: messageId=" + msg.getMessageId() + ", room=" + msg.getRoomId());
 
             // Notify all server-v2 instances — ack only on full success
             boolean success = notifier.notifyAll(msg);
@@ -97,8 +94,7 @@ public class RoomConsumer implements Runnable {
             } else {
               // First failure — allow one requeue retry
               channel.basicNack(deliveryTag, false, true);  // requeue=true
-              logger.warning("Nacked messageId=" + msg.getMessageId()
-                  + ", will be requeued once.");
+              logger.warning("Nacked messageId=" + msg.getMessageId() + ", will be requeued once.");
             }
           }
         });
@@ -115,7 +111,7 @@ public class RoomConsumer implements Runnable {
       Thread.currentThread().interrupt();
       logger.info("RoomConsumer interrupted for rooms=" + roomIds);
     } catch (Exception e) {
-      logger.severe("RoomConsumer error for rooms=" + roomIds + ": " + e.getMessage());
+      logger.log(java.util.logging.Level.SEVERE, "RoomConsumer error for rooms=" + roomIds, e);
     }
   }
 

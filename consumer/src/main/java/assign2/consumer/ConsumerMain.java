@@ -11,12 +11,12 @@ import java.util.stream.Collectors;
 
 /**
  * Entry point for the Consumer service.
- *
- * Reads config.properties, constructs ServerNotifier and ConsumerPool,
- * starts consuming, and registers a JVM shutdown hook for graceful exit.
- *
- * Run: java -jar consumer.jar
- * Override config via env vars: RABBITMQ_HOST, SERVER_URLS, CONSUMER_THREADS
+ * <p>
+ * Reads config.properties, constructs ServerNotifier and ConsumerManager, starts consuming, and
+ * registers a JVM shutdown hook for graceful exit.
+ * <p>
+ * Run: java -jar consumer.jar Override config via env vars: RABBITMQ_HOST, SERVER_URLS,
+ * CONSUMER_THREADS
  */
 public class ConsumerMain {
 
@@ -28,49 +28,51 @@ public class ConsumerMain {
 
     // Server URLs — comma-separated, e.g. "http://server1:8080/server,http://server2:8080/server"
     String urlsRaw = resolve("SERVER_URLS", props, "server.urls", "http://localhost:8080/server");
-    List<String> serverUrls = Arrays.stream(urlsRaw.split(","))
-        .map(String::trim)
-        .filter(s -> !s.isEmpty())
-        .collect(Collectors.toList());
+    List<String> serverUrls = Arrays.stream(urlsRaw.split(",")).map(String::trim)
+        .filter(s -> !s.isEmpty()).collect(Collectors.toList());
 
     // Number of consumer threads
-    String threadsRaw = resolve("CONSUMER_THREADS", props, "consumer.threads", "4");
+    String threadsRaw = resolve("CONSUMER_THREADS", props, "consumer.threads", "10");
     int numThreads = Integer.parseInt(threadsRaw);
 
-    logger.info("ConsumerMain starting: threads=" + numThreads
-        + ", servers=" + serverUrls
-        + ", rabbitmq=" + RabbitMQConfig.HOST + ":" + RabbitMQConfig.PORT);
+    logger.info(
+        "ConsumerMain starting: threads=" + numThreads + ", servers=" + serverUrls + ", rabbitmq="
+            + RabbitMQConfig.HOST + ":" + RabbitMQConfig.PORT);
 
     ServerNotifier notifier = new ServerNotifier(serverUrls);
-    ConsumerPool pool = new ConsumerPool(numThreads, notifier);
+    ConsumerManager conMgr = new ConsumerManager(numThreads, notifier);
 
     // Graceful shutdown on SIGTERM or Ctrl+C
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-      logger.info("Shutdown signal received, stopping ConsumerPool...");
-      pool.shutdown();
+      logger.info("Shutdown signal received, stopping ConsumerManager...");
+      conMgr.shutdown();
     }, "shutdown-hook"));
 
-    pool.start();
+    conMgr.start();  // ======== START =========
 
-    // Keep main thread alive — ConsumerPool threads do the work
+    // Keep main thread alive — ConsumerManager threads do the work
     Thread.currentThread().join();
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
-  private static String resolve(String envKey, Properties props,
-      String propKey, String defaultValue) {
+  private static String resolve(String envKey, Properties props, String propKey,
+      String defaultValue) {
     String envVal = System.getenv(envKey);
-    if (envVal != null && !envVal.isEmpty()) return envVal;
+    if (envVal != null && !envVal.isEmpty()) {
+      return envVal;
+    }
     String propVal = props.getProperty(propKey);
-    if (propVal != null && !propVal.isEmpty()) return propVal;
+    if (propVal != null && !propVal.isEmpty()) {
+      return propVal;
+    }
     return defaultValue;
   }
 
   private static Properties loadProperties() {
     Properties props = new Properties();
-    try (InputStream is = ConsumerMain.class
-        .getClassLoader().getResourceAsStream(PROPERTIES_FILE)) {
+    try (InputStream is = ConsumerMain.class.getClassLoader()
+        .getResourceAsStream(PROPERTIES_FILE)) {
       if (is != null) {
         props.load(is);
       } else {

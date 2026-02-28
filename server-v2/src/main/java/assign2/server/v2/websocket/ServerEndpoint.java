@@ -5,10 +5,9 @@ import assign2.server.v2.model.ChatResponse;
 import assign2.server.v2.model.QueueMessage;
 import assign2.server.v2.rabbitmq.ChannelPool;
 import assign2.server.v2.rabbitmq.MessagePublisher;
+import assign2.server.v2.room.RoomManager;
 import java.io.IOException;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 import javax.websocket.*;
 import javax.websocket.server.PathParam;
@@ -28,10 +27,6 @@ public class ServerEndpoint {
 
   private static final Logger logger = Logger.getLogger(ServerEndpoint.class.getName());
 
-  // Shared across all ServerEndpoint instances (one per connection).
-  // Still needed for BroadcastServlet to look up sessions by roomId.
-  public static final ConcurrentHashMap<String, Set<Session>> rooms = new ConcurrentHashMap<>();
-
   // Lazily initialized on first message — avoids blocking Tomcat startup if RabbitMQ is down.
   private static volatile MessagePublisher publisher;
 
@@ -41,9 +36,8 @@ public class ServerEndpoint {
 
   @OnOpen
   public void onOpen(Session session, @PathParam("roomId") String roomId) {
-    rooms.computeIfAbsent(roomId, k -> ConcurrentHashMap.newKeySet()).add(session);
-    logger.info("Session opened: session=" + session.getId() + ", room=" + roomId
-        + ", total rooms=" + rooms.size());
+    RoomManager.addSession(roomId, session);
+    logger.info("Session opened: session=" + session.getId() + ", room=" + roomId);
   }
 
   @OnMessage
@@ -83,7 +77,7 @@ public class ServerEndpoint {
 
   @OnClose
   public void onClose(Session session, @PathParam("roomId") String roomId, CloseReason reason) {
-    rooms.getOrDefault(roomId, Set.of()).remove(session);
+    RoomManager.removeSession(roomId, session);
     logger.info("Session closed: session=" + session.getId() + ", room=" + roomId
         + ", reason=" + reason);
   }

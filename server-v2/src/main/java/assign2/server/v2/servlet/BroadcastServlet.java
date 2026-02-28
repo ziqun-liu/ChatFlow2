@@ -2,7 +2,7 @@ package assign2.server.v2.servlet;
 
 import assign2.server.v2.model.ChatResponse;
 import assign2.server.v2.model.QueueMessage;
-import assign2.server.v2.websocket.ServerEndpoint;
+import assign2.server.v2.room.RoomManager;
 import com.google.gson.Gson;
 import java.io.IOException;
 import java.util.Set;
@@ -20,7 +20,7 @@ import javax.websocket.Session;
  * Flow:
  *   Consumer → POST /broadcast (body: QueueMessage JSON)
  *       → BroadcastServlet deserializes roomId
- *       → looks up sessions in ServerEndpoint.rooms
+ *       → looks up sessions in RoomManager.rooms
  *       → broadcasts to all open sessions in that room
  *       → returns 200 OK on success, 400/500 on failure
  *
@@ -63,7 +63,7 @@ public class BroadcastServlet extends HttpServlet {
 
     // 3. Look up sessions for this room
     String roomId = queueMsg.getRoomId();
-    Set<Session> sessions = ServerEndpoint.rooms.get(roomId);
+    Set<Session> sessions = RoomManager.getSessions(roomId);
 
     if (sessions == null || sessions.isEmpty()) {
       // No clients connected to this room on this server instance — still a success.

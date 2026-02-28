@@ -32,7 +32,7 @@ WAR_NAME="server.war"
 SERVER_V2_DIR="$(dirname "$0")/../server-v2"
 LOCAL_WAR="$SERVER_V2_DIR/target/$WAR_NAME"
 
-RABBITMQ_HOST="YOUR_RABBITMQ_EC2_PRIVATE_IP"  # Replace with public private IP of RabbitMQ EC2 (not public IP)
+RABBITMQ_HOST="172.31.28.111"  # Replace with public private IP of RabbitMQ EC2 (not public IP)
                                                # Find it in AWS Console: EC2 → Private IPv4 addresses
 # ───────────────────────────────────────────────────────────────────────────
 

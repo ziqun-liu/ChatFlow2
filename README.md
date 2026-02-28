@@ -19,11 +19,15 @@ docker run -d --name rabbitmq \
 #### Setup queues
 
 ```bash
-# local
+# local, run this comman in ONE line
 RABBITMQ_HOST=localhost RABBITMQ_USER=guest RABBITMQ_PASS=guest ./deployment/rabbitmq-setup.sh
 ```
 
 #### Start server-v2
+
+```bash
+export TOMCAT_DIRECTORY=~/Library/Tomcat
+```
 
 ```bash
 # local ChatFlow2/
@@ -64,7 +68,7 @@ cd client
 mvn clean package
 ```
 
-```
+```bash
 java -jar ./target/client-1.0-SNAPSHOT.jar
 ```
 

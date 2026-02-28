@@ -9,6 +9,13 @@
 set -e
 cd "$(dirname "$0")"
 
+# ── Configuration (replace variable values before use) ────────────────────────
+export RABBITMQ_HOST="16.147.81.157"
+export RABBITMQ_USER="guest"
+export RABBITMQ_PASS="guest"
+export WS_URI="ws://cs6650-assignment2-lb-1697352352.us-west-2.elb.amazonaws.com/server/chat/"
+# ───────────────────────────────────────────────────────────────────────────
+
 # Ensure all scripts are executable
 chmod +x rabbitmq-setup.sh deploy-server.sh consumer-setup.sh
 
