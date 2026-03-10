@@ -9,4 +9,7 @@ dependency-reduced-pom.xml
 config.properties
 assignment2.md
 .cursor/
-
+.aiassistant
+.claude/
+client/results/**
+.git/**

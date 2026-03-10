@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import java.time.Instant;
 import java.util.List;
 
+
 public class ChatResponse {
 
   private static final Gson GSON = new Gson();
@@ -60,7 +61,7 @@ public class ChatResponse {
     this.type = "ACK";
   }
 
-  // Broadcast response — built from QueueMessage (used by BroadcastServlet)
+  // Broadcast response — built from QueueMessage
   public ChatResponse(QueueMessage msg) {
     this.messageId   = msg.getMessageId();
     this.userId      = msg.getUserId();
@@ -72,20 +73,6 @@ public class ChatResponse {
     this.status = "OK";
     this.error  = null;
     this.type   = "BROADCAST";
-  }
-
-  // Success response (broadcast use)
-  public ChatResponse(ChatMessageDto msg) {
-    this.messageId = msg.getMessageId();
-    this.userId = msg.getUserId();
-    this.username = msg.getUsername();
-    this.message = msg.getMessage();
-    this.timestamp = msg.getTimestamp();
-    this.messageType = msg.getMessageType();
-    this.serverTimestamp = Instant.now().toString();
-    this.status = "OK";
-    this.error = null;
-    this.type = "BROADCAST";
   }
 
   // Error response

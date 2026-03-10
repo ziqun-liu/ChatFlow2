@@ -15,7 +15,15 @@ import java.util.concurrent.TimeUnit;
 
 public class ClientMain {
 
-  private static final String WS_URI = "ws://54.148.180.35:8080/server/chat/";
+  // Priority: WS_URI env var > default localhost
+  // Production: export WS_URI="ws://ALB_DNS/server/chat/"
+  private static final String WS_URI = resolveWsUri();
+
+  private static String resolveWsUri() {
+    String envVal = System.getenv("WS_URI");
+    if (envVal != null && !envVal.isEmpty()) return envVal;
+    return "ws://localhost:8080/server/chat/";
+  }
   private static final int TOTAL_MESSAGES = 500_000;
 
   private static final int WARMUP_THREADS = 32;
@@ -57,7 +65,7 @@ public class ClientMain {
             connMgr.acquire(roomId);
             try {
               ClientEndpoint endpoint = connMgr.conn(roomId);
-              String ack = endpoint.sendAndAwaitAck(msg.toJson(), 5000);
+              String ack = endpoint.sendAndAwaitAck(msg.toJson(), msg.getMessageId(), 5000);
               if (ack != null) {
                 warmupMetrics.recordSuccess();
               } else {
@@ -132,7 +140,7 @@ public class ClientMain {
     mainMetrics.messageTypeDistribution();
     mainMetrics.roomThroughput();
     mainMetrics.throughputChart();
-    mainMetrics.writeCsv("results/metrics.csv");
-    mainMetrics.writeChart("results/throughput.html");
+    // mainMetrics.writeCsv("results/metrics.csv");
+    // mainMetrics.writeChart("results/throughput.html");
   }
 }
